@@ -86,10 +86,10 @@
                             <div class="investment_sec_right_top">
                                 <h2>Investment Objectives</h2>
                                 <?php if(!empty($res->investmentObjective)) echo $res->investmentObjective;
-                                      else echo "<p>Lorem ipsum dolor sit amet, consectetur adicing the elit. Morbi ultricies eget ante vel consectetur. Namoies cursus justo ipsum, vitae convallis ex viverra sed. Vivamus varius erat id elit blandit, ttis leo vestibulum.</p>
-                                <p>Nam a rutrum urna. Fusce fermentum sit amet purus eu vehicula. Pellentesque pretium volutpat vulputate. Pellentesque lacinia risus quis tellus eleifend tincidunt. Pellentesque lacinia risus quis tellus eleifend tincidunt. Fusce fermentum sit amet purus eu vehicula. Pellentesque pretium volutpat vulputate. Tellus eleifend tincidunt. Fusce fermentum sit amet purus eu vehicula. Fusce fermentum sit amet purus eu vehicula</p>
-                                <p>Lorem ipsum dolor sit amet, consectetur adicing the elit. Morbi ultricies eget ante vel consectetur. Namoies cursus justo ipsum, vitae convallis ex viverra sed. Vivamus varius erat id elit blandit, ttis leo vestibulum.</p>
-                                <p>Nam a rutrum urna. Fusce fermentum sit amet purus eu vehicula. Pellentesque pretium volutpat vulputate. Pellentesque lacinia risus quis tellus eleifend tincidunt. Pellentesque lacinia risus quis tellus eleifend tincidunt. Fusce fermentum sit amet purus eu vehicula. Pellentesque pretium volutpat vulputate. Tellus eleifend tincidunt. Fusce fermentum sit amet purus eu vehicula. Fusce fermentum sit amet purus eu vehicula</p>";?>
+                                      else echo "<p>Lorem ipsum dolor sit amet, consectetur adicing the elit. Morbi ultricies
+                                            eget ante vel consectetur. Namoies cursus justo ipsum, vitae convallis ex viverra sed. Vivamus varius 
+                                            erat id elit blandit, ttis leo vestibulum.</p>";
+                                ?>
                                 
                             </div>
                             <div class="keyfacts_sec">

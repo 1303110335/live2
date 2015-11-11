@@ -3,9 +3,9 @@
     <div class="ishare_sec_cont">
         <div class="ivv_heading">
             <div class="ivv_heading_block">
-                <h3><?php echo $res->ticker;?></h3>
+                <h3><?php if(isset($res->ticker))echo $res->ticker;else echo 'no ticker';?></h3>
             </div>
-            <h2><?php echo $res->fullName;?></h2>
+            <h2><?php if(isset($res->fullName))echo $res->fullName;else echo 'no fullName';?></h2>
             <div class="clr"></div>
         </div>
         <div class="ishare_sec_pagination">
@@ -23,11 +23,11 @@
                 <tr>
                     <td id="firstcol">
                         <p>Last</p>
-                        <h3 class="last"><?php echo $summary->Last;?></h3>
+                        <h3 class="last"></h3>
                     </td>
                     <td>
                         <p>Change (% Chg)</p>
-                        <h3 class="change"><?php echo $summary->Change;echo ' ('.$summary->percent.'%)';?></h3>
+                        <h3 class="change"></h3>
                     </td>
                     <td class="last_cell">
                         <table id="subtable">
@@ -35,37 +35,37 @@
                                 <tr>
                                     <td>
                                         <p>Previous</p>
-                                        <h3 class="grey"><?php echo $summary->Previous;?></h3>
+                                        <h3 class="grey previous"></h3>
                                     </td>
                                     <td>
                                         <p>Day's High</p>
-                                        <h3 class="green"><?php echo $summary->High;?></h3>
+                                        <h3 class="green high"></h3>
                                     </td>
                                     <td>
                                         <p>Volume</p>
-                                        <h3 class="grey"><?php echo ($summary->Volume)/1000;?>M Shares</h3>
+                                        <h3 class="grey volume">4.2M Shares</h3>
                                     </td>
                                     <td>
                                         <p>52-Week High</p>
-                                        <h3 class="grey"><?php echo $summary->Week52High;?></h3>
+                                        <h3 class="grey week52high"></h3>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td>
                                         <p>Open</p>
-                                        <h3 class="grey"><?php echo $summary->Open;?></h3>
+                                        <h3 class="grey open"></h3>
                                     </td>
                                     <td>
                                         <p>Day's Low</p>
-                                        <h3 class="red"><?php echo $summary->Low;?></h3>
+                                        <h3 class="red low"></h3>
                                     </td>
                                     <td>
                                         <p>Average Volume</p>
-                                        <h3 class="grey"><?php echo ($summary->AverageVolume)/1000;?>M Shares</h3>
+                                        <h3 class="grey averagevolume">4.2M Shares</h3>
                                     </td>
                                     <td>
                                         <p>52-Week Low</p>
-                                        <h3 class="grey"><?php echo $summary->Week52Low;?></h3>
+                                        <h3 class="grey week52low"></h3>
                                     </td>
                                 </tr>
                             </tbody>
@@ -80,52 +80,52 @@
                 <tr>
                     <td>
                         <p>Last</p>
-                        <h3 class="last"><?php echo $summary->Last;?></h3>
+                        <h3 class="last"></h3>
                     </td>
                     <td>
                         <p>Change (% Chg)</p>
-                        <h3 class="change"><?php echo $summary->Change;?></h3>
+                        <h3 class="change"></h3>
                     </td>
                 </tr>
                 <tr>
                     <td>
                         <p>Previous</p>
-                        <h3 class="grey"><?php echo $summary->Previous;?></h3>
+                        <h3 class="grey previous"></h3>
                     </td>
                     <td>
                         <p>Open</p>
-                        <h3 class="grey"><?php echo $summary->Open;?></h3>
+                        <h3 class="grey open"></h3>
                     </td>
                 </tr>
                 <tr>
                     <td>
                         <p>Day's High</p>
-                        <h3 class="grey"><?php echo $summary->High;?></h3>
+                        <h3 class="grey high"></h3>
                     </td>
                     <td>
                         <p>Day's Low</p>
-                        <h3 class="grey"><?php echo $summary->Low;?></h3>
+                        <h3 class="grey low"></h3>
                     </td>
                 </tr>
                 <tr>
                     <td>
                         <p>Volume</p>
-                        <h3 class="grey"><?php echo ($summary->Last)/1000;?>M Shares</h3>
+                        <h3 class="grey volume">4.2M Shares</h3>
                     </td>
                     <td>
                         <p>Average Volume</p>
-                        <h3 class="grey">4.2M Shares</h3>
+                        <h3 class="grey averagevolume">4.2M Shares</h3>
 
                     </td>
                 </tr>
                 <tr>
                     <td>
                         <p>52-Week High</p>
-                        <h3 class="grey"><?php echo $summary->Week52High;?></h3>
+                        <h3 class="grey week52high"></h3>
                     </td>
                     <td>
                         <p>52-Week Low</p>
-                        <h3 class="grey"><?php echo $summary->Week52Low;?></h3>
+                        <h3 class="grey low"></h3>
                     </td>
                 </tr>
             </tbody>
@@ -133,8 +133,26 @@
     </div>
 </div>
 <script type="text/javascript">
-    var url = window.location.search;
-    alert(url);
+    $(function(){
+        $.get('/inside/fundviewer',{'ishare':tickerName},
+        	    function(data){addDataToIshare(data);}
+        );
+    });
+
+    function addDataToIshare(data){
+        if(data){
+            data = $.parseJSON(data);
+            $('.last').html(data.Last);
+            $('.change').html(data.Change+'('+data.percent+' %)');
+            $('.previous').html(data.Previous);
+            $('.open').html(data.Open);
+            $('.high').html(data.High);
+            $('.low').html(data.Low);
+            $('.averagevolume').html(data.AverageVolume/1000+'M Shares');
+            $('.volume').html(data.Volume/1000+'M Shares');
+            $('.week52high').html(data.Week52High);
+            $('.week52low').html(data.Week52Low);
+        }
+    }
     
-     //$.get('inside/fundviewer',{});
 </script>

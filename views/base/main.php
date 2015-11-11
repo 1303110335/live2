@@ -84,7 +84,7 @@
                     <form action="/Fundprofiles/search" method="post" name="research">
                         <input id="search_name" name="search" type="text" value="" placeholder="Enter Ticket or Keyword" />
                         <div class="search_bar_icon">
-                            <input type="button" value="" 
+                            <input type="button" value="" class="search_btn"
                             style="background: url(<?php echo Yii::app()->request->baseUrl; ?>/images/search-icon.png) no-repeat"/>
                         </div>
                         <ul class="search_tips" style="width:415px;left:6px;top:93px;">

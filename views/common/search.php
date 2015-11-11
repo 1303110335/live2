@@ -10,12 +10,8 @@ function showTickers($url){
 	$('.search_newname').keyup(function(){
         var key = $(this).val();
         if(key=='') {return false;}
-    	$.ajax({
-    	   type: "POST",
-    	   url: $url,
-    	   datatype:'html',
-    	   data:{'search':key},
-    	   success: function(data){
+    	$.post( $url,{'search':key},
+	    	function(data){
     		   $('.search_tip').empty().append(data);
     		   $('.search_tip li').click(function(){
        		       $('.search_newname').val($(this).html());
@@ -23,7 +19,7 @@ function showTickers($url){
        		       return false;
        		   });
     	   }
-    	});
+  	   ,'html');
         $('.search_tip').css('display','block');
     });
 }

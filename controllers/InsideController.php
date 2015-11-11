@@ -57,68 +57,179 @@ class InsideController extends Controller{
     }
     
     public function actionFundViewer(){
-        //order by desc
-        if(isset($_POST['keyword'])){
-            $key = $_POST['keyword'];
-            $sql = 'select * from fundPer where ticker in (SELECT distinct tickerB FROM `Correlations` where tickerA = "'.$key.'" and rho > 0.9 and rho <1) union '.
-                   'select * from fundPer where ticker in (SELECT distinct tickerA FROM `Correlations` where tickerB = "'.$key.'" and rho > 0.9 and rho <1)';
-            
-            if(isset($_POST['order'])){
-                $sql .= $this->orderByKey($_POST['order'],$_POST['key']);
-            }
-            $res = FundPer::model()->findAllBySql($sql);
-            $this->echoAjaxArray($res);
-            exit;
-        }
+        /*ajax加载*/
+        $this->get_data_for_ishare();
 
-        $this->getAllHoldings();
+        $this->get_distributes();
         
-        if(isset($_GET['ticker'])){
-            //FBND - Fidelity Total Bond ETF
-            $ticker = htmlspecialchars($_GET['ticker']);
-            list($ticker,) = explode(' - ',$ticker);
-            
-            /* $summaryObj = get_obj_from_xml($ticker);
-            $Change = $summaryObj->Change;
-            $summaryObj->percent = number_format(((float)$Change *100)/$summaryObj->Last , 2);  */
-            //distributes
-            //$distributes = $this->get_distributes($ticker);
-            
-            $id = FundProfiles::get_id_by_tickr($ticker);
-            //data for detail of ETF
-            $fund = FundProfiles::model()->find('id='.$id);
+        $this->get_top10_holdings();
+        
+        $this->getAllHoldings();    
 
-            //$performance = PerformanceMetrics::model()->find('ids='.$id);
-
-            /* $key = $fund->ticker;
-            $sql = 'select `Constituent Name` as company,`Constituent Ticker` as ticker,Weighting as weight from ConstituentData where `Composite Ticker`="'.$key.'" order by Weighting desc limit 10';
-            $holdings=$this->readAllFromDB($sql); */
-            
-            //$relations = $this->getDataForRelations($key);
-            
-            $all = array('res'=>$fund,
-                         //'holdings'=>$holdings,
-                         //'performance'=>$performance,
-                         //'relations'=>$relations,
-                         //'summary'=>$summaryObj,
-                         //'dividends'=>$distributes
-                );
-            
-            $this->render('summarysheet',$all);
-        }        
+        $this->get_shortTermPerformance();
+        
+        $this->get_longTermPerformance();
+        
+        $this->get_PerformanceByYear();
+        
+        $this->order_by_desc_or_asc_for_relations();
+        
+        $this->getDataForRelations();
+        /*非ajax加载*/
+        $this->get_detailFromFundProfiles();       
     }
     
-    public function getDataForRelations($key){
-        //data for relations
-        $sql = 'select * from fundPer where ticker in (SELECT distinct tickerB FROM `Correlations` where tickerA = "'.$key.'" and rho > 0.9 and rho <1) union '.
-            'select * from fundPer where ticker in (SELECT distinct tickerA FROM `Correlations` where tickerB = "'.$key.'" and rho > 0.9 and rho <1) limit 20';
-        return FundPer::model()->findAllBySql($sql);
+    public function order_by_desc_or_asc_for_relations(){
+        if(isset($_POST['keyword'])){
+             $key = $_POST['keyword'];
+             $sql = 'select * from fundPer where ticker in (SELECT distinct tickerB FROM `Correlations` where tickerA = "'.$key.'" and rho > 0.9 and rho <1) union '.
+             'select * from fundPer where ticker in (SELECT distinct tickerA FROM `Correlations` where tickerB = "'.$key.'" and rho > 0.9 and rho <1)';
+            
+             if(isset($_POST['order'])){
+                $sql .= $this->orderByKey($_POST['order'],$_POST['key']);
+             }
+             $res = FundPer::model()->findAllBySql($sql);
+             $this->echoAjaxArray($res);
+             exit;
+         }
+    }
+    
+    public function get_detailFromFundProfiles(){
+        if(isset($_GET['ticker'])){
+            $ticker = htmlspecialchars($_GET['ticker']);
+            list($ticker,) = explode(' - ',$ticker);
+            $dataFromFundprofiles = FundProfiles::model()->find('ticker=:ticker',array(':ticker'=>$ticker));
+            $this->render('summarysheet',array('res'=>$dataFromFundprofiles));
+        }
+    }
+    
+    public function get_PerformanceByYear(){
+        //performance_by_year
+        if(!isset($_GET['performance_by_year']))return false;
+        $ticker = addslashes($_GET['performance_by_year']);
+        $date = FundProfiles::model()->find(array(
+            'select'=>array('firstTradeDate'),
+            'condition'=>'ticker=:ticker',
+            'params'=>array(':ticker'=>$ticker)
+        ));
+        $date = $date->firstTradeDate;//2008-03-28
+        $title = array();
+        $start = intval(date('Y',strtotime($date)));
+        for($year=$start,$index=0;$year<=2014;$year++,$index++){
+            $title[$index] = array();
+            $title[$index]['year'] = $year;
+            $title[$index]['TR'] = 'p'.$year.'TR';
+            $title[$index]['PR'] = 'p'.$year.'PR';
+        }
+        
+        $performance = PerformanceMetrics::model()->find('ticker=:ticker',array(':ticker'=>$ticker));
+        
+        $performance = $this->add_performance_by_year_with_html($performance,$title);
+        echo $performance;exit;
+    }
+    
+    public function add_performance_by_year_with_html($performance,$titles){
+        if(empty($performance))return '';
+        $str = '';
+        foreach ($titles as $title){
+            $str .= '
+                <tr class="old">
+                    <td>'.$title['year'].'</td>
+                    <td>'.$performance->$title['TR'].'</td>
+                    <td>'.$performance->$title['PR'].'</td>
+                </tr>
+            ';
+        }
+        return $str;
+    }
+    
+    public function get_longTermPerformance(){
+        if(!isset($_GET['long_term_performance']))return false;
+        $ticker = addslashes($_GET['long_term_performance']);
+        $performance = PerformanceMetrics::model()->find(
+            array(
+                'select' =>array('p1YPR','p1YTR','P3YPR','P3YTR','P5YPR','P5YTR','P10YPR','P10YTR'),
+                'condition' => 'ticker=:ticker',
+                'params' => array(':ticker'=>$ticker)
+            )
+        );
+        $performance = $this->add_long_term_performance_with_html($performance);
+        echo $performance;exit;
+    }
+    
+    public function add_long_term_performance_with_html($performance){
+        if(empty($performance))return '';
+        $str = '
+                <tr class="old">
+                    <td>1 Year</td>
+                    <td>'.$performance->p1YPR.'</td>
+                    <td>'.$performance->p1YTR.'</td>
+                </tr>
+                <tr>
+                    <td>3 Year</td>
+                    <td>'.$performance->P3YPR.'</td>
+                    <td>'.$performance->P3YTR.'</td>
+                </tr>
+                <tr class="old">
+                    <td>5 Year</td>
+                    <td>'.$performance->P5YPR.'</td>
+                    <td>'.$performance->P5YTR.'</td>
+                </tr>
+                <tr>
+                    <td>10 Year</td>
+                    <td>'.$performance->P10YPR.'</td>
+                    <td>'.$performance->P10YTR.'</td>
+                </tr>
+            ';
+        return $str;
+    }
+    
+    public function get_shortTermPerformance(){
+        if(!isset($_GET['short_term_performance']))return false;
+        $ticker = addslashes($_GET['short_term_performance']);
+        $performance = PerformanceMetrics::model()->find(
+            array(
+                'select' =>array('p1MPR','p1MTR','p3MPR','p3MTR','p6MPR','p6MTR','pYTDPR','pYTDTR'),
+                'condition' => 'ticker=:ticker',
+                'params' => array(':ticker'=>$ticker)
+            )
+        );
+        $performance = $this->add_short_term_performance_with_html($performance);
+        echo $performance;exit;
+    }
+    
+    public function add_short_term_performance_with_html($performance){
+        if(empty($performance))return '';
+        $str = '
+            <tr class="old">
+                    <td>1 Month</td>
+                    <td>'.$performance->p1MPR.'</td>
+                    <td>'.$performance->p1MTR.'</td>
+                </tr>
+                <tr>
+                    <td>3 Month</td>
+                    <td>'.$performance->p3MPR.'</td>
+                    <td>'.$performance->p3MTR.'</td>
+                </tr>
+                <tr class="old">
+                    <td>6 Month</td>
+                    <td>'.$performance->p6MPR.'</td>
+                    <td>'.$performance->p6MTR.'</td>
+                </tr>
+                <tr>
+                    <td>YeartoDate</td>
+                    <td>'.$performance->pYTDPR.'</td>
+                    <td>'.$performance->pYTDTR.'</td>
+                </tr>
+            ';
+        return $str;
     }
     
     public function getAllHoldings(){
-        if(isset($_POST['name'])){
-            $key = $_POST['name'];
-            $sql = 'select `Constituent Name` as company,`Constituent Ticker` as ticker,Weighting as weight from ConstituentData where `Composite Ticker`="'.$key.'" order by Weighting desc';
+        if(isset($_POST['allholdings'])){
+            $allholdings = addslashes($_POST['allholdings']);
+            $sql = 'select `Constituent Name` as company,`Constituent Ticker` as ticker,Weighting as weight from ConstituentData
+                where `Composite Ticker`="'.$allholdings.'" order by Weighting desc';
             $command = Yii::app()->db->createCommand($sql);
             $dataReader = $command->query();
             $result = '';
@@ -133,7 +244,40 @@ class InsideController extends Controller{
         }
     }
     
-    public function get_distributes($ticker){
+    public function get_top10_holdings(){
+        if(!isset($_GET['holdings']))return false;
+        $ticker = addslashes($_GET['holdings']);
+        $sql = 'select `Constituent Name` as company,`Constituent Ticker` as ticker,Weighting as weight from ConstituentData 
+            where `Composite Ticker`="'.$ticker.'" order by Weighting desc limit 10';
+        $holdings = $this->readAllFromDB($sql);
+        $holdings = $this->add_holdings_with_html($holdings);
+        echo $holdings;exit;
+    }
+    
+    public function get_data_for_ishare(){
+        if(isset($_GET['ishare'])){
+            $ticker = addslashes($_GET['ishare']);
+            $summaryObj = get_obj_from_xml($ticker);
+            $Change = $summaryObj->Change;
+            if(!empty($summaryObj->Last)&&$summaryObj->Last!=0)
+                $summaryObj->percent = number_format(((float)$Change *100)/$summaryObj->Last , 2);
+            else $summaryObj->percent = 0;
+            echo json_encode($summaryObj);exit;
+        }
+    }
+    
+    public function getDataForRelations(){
+        if(!isset($_GET['relations']))return '';
+        $ticker = $_GET['relations'];
+        $sql = 'select * from fundPer where ticker in (SELECT distinct tickerB FROM `Correlations` where tickerA = "'.$ticker.'" and rho > 0.9 and rho <1) union '.
+            'select * from fundPer where ticker in (SELECT distinct tickerA FROM `Correlations` where tickerB = "'.$ticker.'" and rho > 0.9 and rho <1) limit 20';
+        $relations = FundPer::model()->findAllBySql($sql);
+        echo $this->echoAjaxArray($relations);exit;
+    }
+    
+    public function get_distributes(){
+        if(!isset($_GET['distributes']))return false;
+        $ticker = addslashes($_GET['distributes']);
         $divs = new dividends($ticker, null);
         $divs->setDateRange(dateDBDateToMktime("2000-01-01"), dateDBDateToMktime("2015-10-01"));
         $haveDataOrEmpty = $divs->loadDivs();
@@ -141,7 +285,51 @@ class InsideController extends Controller{
         if($haveDataOrEmpty){
             $result = $divs->xml->GetCashDividendHistoryResult->Dividends->Dividend;
         }
-        return $result;
+        if(!$result){echo '';exit;}
+        $result = $this->add_distributes_with_html($result);
+        echo $result;exit;
+    }
+    
+    public function add_distributes_with_html($distributes){
+        $flag = false;
+        if(empty($distributes))return '';
+        $str = '';
+        foreach($distributes as $row){
+            if($flag==true) {
+                $str .='<tr class="odd">';
+            }else {
+                $str .= '<tr>';
+            }
+            $str .='<td>'.$row->ExDate.'</td>';
+            $str .='<td>'.$row->RecordDate.'</td>';
+            $str .='<td>'.$row->PayDate.'</td>';
+            $str .='<td>'.$row->DividendAmount.'</td>';
+            $str .='<td>'.$row->PaymentFrequency.'</td>';
+            $str .='<td>'.$row->Type.'</td>';
+            $str .='</tr>';
+            $flag=!$flag;
+        }
+        return $str;
+    }
+    
+    public function add_holdings_with_html($holdings){
+        $flag = false;
+        if(empty($holdings))return '';
+        $str = '';
+        foreach($holdings as $row){
+            if(empty($row['company']))continue;
+            if($flag==true) {
+                $str .='<tr class="odd">';
+            }else {
+                $str .= '<tr>';
+            }
+            $str .='<td>'.$row['company'].'</td>';
+            $str .='<td>'.$row['ticker'].'</td>';
+            $str .='<td>'.$row['weight'].'</td>';
+            $str .='</tr>';
+            $flag = !$flag;
+        }
+        return $str;
     }
     
     public function actionHoldings(){
@@ -473,6 +661,7 @@ class InsideController extends Controller{
     }
     
     public function echoAjaxArray($res,$pager='',$cnt=''){
+        if(empty($res)){echo '';exit;}
         $allLabelArrayForTr = [
             ['expenseRatio','investmentAdvisor','firstTradeDate'],
             ['p1MPR','p3MPR','pYTDPR'],

@@ -1,7 +1,7 @@
 
 <div class="research">
 
-    <form action="/fundProfiles/search" method="post" name="research">
+    <form name="research">
         <?php $this->renderPartial('/common/search');?>
         <div style="clear:both;"></div>
     </form>
@@ -41,9 +41,18 @@ $(function(){
 			'<a href="#">&Portfolios</a></div>');
     });
     $(".research").delegate(".searchBtn","click",function(){
-        var ticker = $.trim($('.search_newname').val());
-	    window.location.href='/inside/fundViewer/ticker/'+ticker;
+    	redirectToSummary();
 	});
 
+    $(window).keydown(function(event){
+        if(event.keyCode== 13){
+        	redirectToSummary();
+        }
+  	});
+  	
+  	function redirectToSummary(){
+  		var ticker = $.trim($('.search_newname').val());
+	    window.location.href='/inside/fundViewer/ticker/'+ticker;
+    }
 </script>
 

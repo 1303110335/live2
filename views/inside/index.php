@@ -21,7 +21,7 @@ $(function(){
  	);
 
    $('.investment_sec').css('display','block');
-
+   
    //order by title desc or asc
 	$('.sortClass th').click(function(){
 	    if($(this).html()=='Select')return false;
